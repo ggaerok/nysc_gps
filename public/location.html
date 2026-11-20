@@ -36,9 +36,13 @@ html,body{height:100%}
 #cover{position:fixed;inset:0;background:#fff;z-index:9000;color:#b8b8b8;font-size:13px;display:flex;align-items:center;justify-content:center}
 .coord{background:#fff;border:3px solid #1b1330;border-radius:16px;padding:12px 14px;margin:12px 0;text-align:left}
 .coord .lbl{font-size:14px;color:#4a3b78}
-.coord .val{font-size:26px;margin-top:4px;font-variant-numeric:tabular-nums;word-break:keep-all}
-.coord .dec{font-size:13px;color:#6b5c9a;margin-top:2px;font-variant-numeric:tabular-nums}
-ul.info{text-align:left;color:#4a3b78;font-size:15px;line-height:1.6;padding-left:20px;margin:10px 0 4px}
+.coord .val{font-size:39px;line-height:1.2;margin-top:4px;font-variant-numeric:tabular-nums;word-break:keep-all}
+.coord .dec{font-size:19.5px;color:#6b5c9a;margin-top:2px;font-variant-numeric:tabular-nums}
+ul.info{text-align:left;color:#4a3b78;font-size:15px;line-height:1.6;padding-left:20px;margin:8px 0 6px}
+ul.info li{margin:4px 0}
+.red{color:#d11f1f}
+.how{font-size:13px;color:#6b5c9a;text-align:left;line-height:1.55;margin:4px 0 10px;padding:8px 10px;border:2px dashed #1b1330;border-radius:12px;background:rgba(255,255,255,.6)}
+.how b{color:#4a3b78;font-weight:400}
 .row .btn{min-width:0;flex:1}
 #wrap{width:100%;display:flex;flex-direction:column;align-items:center}
 </style>
@@ -51,20 +55,23 @@ ul.info{text-align:left;color:#4a3b78;font-size:15px;line-height:1.6;padding-lef
 
 <div id="consent" class="card hidden">
   <h2>이용 안내</h2>
-  <p class="note">이 페이지는 지금 사용 중인 휴대전화의 위치(GPS)를 화면에 실시간으로 보여줍니다.</p>
   <ul class="info">
-    <li>위도·경도를 도·각분·각초로 표시합니다. (각초는 소수 둘째 자리)</li>
-    <li>좌표는 이 기기의 화면에만 표시됩니다. 서버로 전송하거나 어디에도 저장하지 않습니다.</li>
-    <li>[동의]를 누르면 위치 사용 권한을 묻는 창이 나타납니다.</li>
+    <li>내 휴대전화의 GPS 위치를 실시간으로 보여줍니다.</li>
+    <li>좌표는 이 화면에만 표시되며 <b class="red">서버로 전송하거나 저장하지 않습니다.</b></li>
+    <li>[동의]를 누르면 위치 권한 창이 나타납니다.</li>
+    <li class="red">권한 창에서 반드시 [이번에만 허용]을 눌러 주세요. (iPhone은 [한 번 허용]) 그래야 다음 접속 때 다시 묻습니다.</li>
   </ul>
-  <div class="row"><button id="cancel" class="btn sub" type="button">취소</button><button id="agree" class="btn go" type="button">동의</button></div>
-</div>
-
-<div id="view" class="card hidden">
-  <div class="coord"><div class="lbl">위도 (Latitude)</div><div class="val" id="lat">위치 수신 중…</div><div class="dec" id="latd"></div></div>
-  <div class="coord"><div class="lbl">경도 (Longitude)</div><div class="val" id="lon">위치 수신 중…</div><div class="dec" id="lond"></div></div>
-  <p class="note" id="acc"></p>
-  <p class="note err" id="err"></p>
+  <div class="how"><b>다른 허용(항상 허용 등)을 눌렀다면?</b><br>
+    Chrome: 주소창 왼쪽 아이콘 → 권한 → 위치 → '매번 확인' 또는 재설정<br>
+    iPhone: 설정 → Safari → 위치 → '묻기'<br>
+    <span>※ 기기마다 메뉴 이름이 조금 다를 수 있습니다.</span></div>
+  <div id="btns" class="row"><button id="cancel" class="btn sub" type="button">취소</button><button id="agree" class="btn go" type="button">동의</button></div>
+  <div id="view" class="hidden">
+    <div class="coord"><div class="lbl">위도 (Latitude)</div><div class="val" id="lat">위치 수신 중…</div><div class="dec" id="latd"></div></div>
+    <div class="coord"><div class="lbl">경도 (Longitude)</div><div class="val" id="lon">위치 수신 중…</div><div class="dec" id="lond"></div></div>
+    <p class="note" id="acc"></p>
+    <p class="note err" id="err"></p>
+  </div>
 </div>
 </div>
 <script src="/dms.js"></script>
@@ -72,7 +79,7 @@ ul.info{text-align:left;color:#4a3b78;font-size:15px;line-height:1.6;padding-lef
 (function () {
 'use strict';
 function $(id) { return document.getElementById(id); }
-var cover = $('cover'), consent = $('consent'), view = $('view');
+var cover = $('cover'), consent = $('consent'), view = $('view'), btns = $('btns');
 var POLL = 3000, MAX_FAILS = 2, fails = 0, agreed = false, watchId = null;
 
 function stopWatch() { if (watchId !== null) { try { navigator.geolocation.clearWatch(watchId); } catch (e) {} watchId = null; } }
@@ -84,10 +91,11 @@ function reset() {
 function dmsText(r) { return r.dir + ' ' + r.d + '° ' + r.m + '′ ' + r.s + '″'; }
 
 function show(open, msg) {
-  if (!open) { reset(); consent.classList.add('hidden'); view.classList.add('hidden'); cover.style.display = 'flex'; $('coverMsg').textContent = msg || ''; return; }
+  if (!open) { reset(); consent.classList.add('hidden'); view.classList.add('hidden'); btns.classList.remove('hidden'); cover.style.display = 'flex'; $('coverMsg').textContent = msg || ''; return; }
   cover.style.display = 'none';
-  if (agreed) { consent.classList.add('hidden'); view.classList.remove('hidden'); }
-  else { view.classList.add('hidden'); consent.classList.remove('hidden'); }
+  consent.classList.remove('hidden');                       // 이용 안내는 동의 전·후 모두 보여준다
+  if (agreed) { btns.classList.add('hidden'); view.classList.remove('hidden'); }
+  else { view.classList.add('hidden'); btns.classList.remove('hidden'); }
 }
 function check() {
   fetch('/api/status', { cache: 'no-store' }).then(function (r) {
