@@ -36,11 +36,19 @@ html,body{height:100%}
 #cover{position:fixed;inset:0;background:#fff;z-index:9000;color:#b8b8b8;font-size:13px;display:flex;align-items:center;justify-content:center}
 .coord{background:#fff;border:3px solid #1b1330;border-radius:16px;padding:12px 14px;margin:12px 0;text-align:left}
 .coord .lbl{font-size:14px;color:#4a3b78}
-.coord .val{font-size:39px;line-height:1.2;margin-top:4px;font-variant-numeric:tabular-nums;word-break:keep-all}
-.coord .dec{font-size:19.5px;color:#6b5c9a;margin-top:2px;font-variant-numeric:tabular-nums}
+.coord .val{font-size:min(32px,calc((100vw - 120px) / 8.9));line-height:1.25;margin-top:4px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.coord .dec{font-size:16px;color:#6b5c9a;margin-top:2px;font-variant-numeric:tabular-nums}
 ul.info{text-align:left;color:#4a3b78;font-size:15px;line-height:1.6;padding-left:20px;margin:8px 0 6px}
 ul.info li{margin:4px 0}
 .red{color:#d11f1f}
+.agreed .pre{display:none}
+#consent.agreed{display:flex;flex-direction:column;min-height:calc(100vh - 110px);min-height:calc(100dvh - 110px)}
+#consent.agreed:not(.gopen) #guide{display:none}
+#consent.agreed.gopen #guide{flex:1;display:flex;flex-direction:column;justify-content:center}
+#guideBtn{width:100%;margin-top:auto}
+#consent.agreed.gopen #view{margin-bottom:0}
+#consent.agreed #view{margin-bottom:14px}
+
 .how{font-size:13px;color:#6b5c9a;text-align:left;line-height:1.55;margin:4px 0 10px;padding:8px 10px;border:2px dashed #1b1330;border-radius:12px;background:rgba(255,255,255,.6)}
 .how b{color:#4a3b78;font-weight:400}
 .row .btn{min-width:0;flex:1}
@@ -54,24 +62,27 @@ ul.info li{margin:4px 0}
 <h1 style="margin-top:8px">내 GPS 좌표</h1>
 
 <div id="consent" class="card hidden">
-  <h2>이용 안내</h2>
-  <ul class="info">
-    <li>내 휴대전화의 GPS 위치를 실시간으로 보여줍니다.</li>
-    <li>좌표는 이 화면에만 표시되며 <b class="red">서버로 전송하거나 저장하지 않습니다.</b></li>
-    <li>[동의]를 누르면 위치 권한 창이 나타납니다.</li>
-    <li class="red">권한 창에서 반드시 [이번에만 허용]을 눌러 주세요. (iPhone은 [한 번 허용]) 그래야 다음 접속 때 다시 묻습니다.</li>
-  </ul>
-  <div class="how"><b>다른 허용(항상 허용 등)을 눌렀다면?</b><br>
-    Chrome: 주소창 왼쪽 아이콘 → 권한 → 위치 → '매번 확인' 또는 재설정<br>
-    iPhone: 설정 → Safari → 위치 → '묻기'<br>
-    <span>※ 기기마다 메뉴 이름이 조금 다를 수 있습니다.</span></div>
-  <div id="btns" class="row"><button id="cancel" class="btn sub" type="button">취소</button><button id="agree" class="btn go" type="button">동의</button></div>
   <div id="view" class="hidden">
     <div class="coord"><div class="lbl">위도 (Latitude)</div><div class="val" id="lat">위치 수신 중…</div><div class="dec" id="latd"></div></div>
     <div class="coord"><div class="lbl">경도 (Longitude)</div><div class="val" id="lon">위치 수신 중…</div><div class="dec" id="lond"></div></div>
     <p class="note" id="acc"></p>
     <p class="note err" id="err"></p>
   </div>
+  <div id="guide">
+  <h2 style="margin-top:6px">이용 안내</h2>
+  <ul class="info">
+    <li>내 휴대전화의 GPS 위치를 실시간으로 보여줍니다.</li>
+    <li>좌표는 이 화면에만 표시되며 <b class="red">서버로 전송하거나 저장하지 않습니다.</b></li>
+    <li class="pre">[동의]를 누르면 위치 권한 창이 나타납니다.</li>
+    <li class="red pre">권한 창에서 [이번에만 허용]이 보이면 반드시 그것을 눌러 주세요. 그래야 다음 접속 때 다시 묻습니다.</li>
+  </ul>
+  <div class="how"><b>다른 허용(항상 허용 등)을 눌렀다면?</b><br>
+    <b>삼성 인터넷</b>: 메뉴(≡) → 설정 → 사이트 및 다운로드 → 사이트 권한 → 위치 → 허용된 사이트에서 이 사이트 삭제<br>
+    <b>iPhone Safari</b>: 설정 → 앱 → Safari → 위치 → 이 사이트 → '묻기' (iOS 17 이하는 설정 → Safari → 위치)<br>
+    <span>※ 기기마다 설정 방법이 조금 다를 수 있습니다.</span></div>
+  </div>
+  <div id="btns" class="row"><button id="cancel" class="btn sub" type="button">취소</button><button id="agree" class="btn go" type="button">동의</button></div>
+  <button id="guideBtn" class="btn sub hidden" type="button" aria-expanded="false">이용안내</button>
 </div>
 </div>
 <script src="/dms.js"></script>
@@ -79,12 +90,12 @@ ul.info li{margin:4px 0}
 (function () {
 'use strict';
 function $(id) { return document.getElementById(id); }
-var cover = $('cover'), consent = $('consent'), view = $('view'), btns = $('btns');
+var cover = $('cover'), consent = $('consent'), view = $('view'), btns = $('btns'), guideBtn = $('guideBtn');
 var POLL = 3000, MAX_FAILS = 2, fails = 0, agreed = false, watchId = null;
 
 function stopWatch() { if (watchId !== null) { try { navigator.geolocation.clearWatch(watchId); } catch (e) {} watchId = null; } }
 function reset() {
-  stopWatch(); agreed = false;
+  stopWatch(); agreed = false; consent.classList.remove('gopen'); guideBtn.setAttribute('aria-expanded', 'false');
   $('lat').textContent = '위치 수신 중…'; $('lon').textContent = '위치 수신 중…';
   $('latd').textContent = ''; $('lond').textContent = ''; $('acc').textContent = ''; $('err').textContent = '';
 }
@@ -94,8 +105,9 @@ function show(open, msg) {
   if (!open) { reset(); consent.classList.add('hidden'); view.classList.add('hidden'); btns.classList.remove('hidden'); cover.style.display = 'flex'; $('coverMsg').textContent = msg || ''; return; }
   cover.style.display = 'none';
   consent.classList.remove('hidden');                       // 이용 안내는 동의 전·후 모두 보여준다
-  if (agreed) { btns.classList.add('hidden'); view.classList.remove('hidden'); }
-  else { view.classList.add('hidden'); btns.classList.remove('hidden'); }
+  consent.classList.toggle('agreed', agreed);               // 동의 후에는 '권한 창' 안내 두 줄을 숨기고 점선 상자만 남긴다
+  if (agreed) { btns.classList.add('hidden'); view.classList.remove('hidden'); guideBtn.classList.remove('hidden'); }
+  else { view.classList.add('hidden'); btns.classList.remove('hidden'); guideBtn.classList.add('hidden'); }
 }
 function check() {
   fetch('/api/status', { cache: 'no-store' }).then(function (r) {
@@ -124,6 +136,10 @@ function startWatch() {
   }, { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
 }
 
+guideBtn.addEventListener('click', function () {
+  var open = consent.classList.toggle('gopen');
+  guideBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+});
 $('agree').addEventListener('click', function () { agreed = true; show(true); startWatch(); });
 $('cancel').addEventListener('click', function () {
   reset(); window.close();                       // 스크립트로 연 창이 아니면 닫히지 않을 수 있어 빈 페이지로 이동
