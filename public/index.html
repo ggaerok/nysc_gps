@@ -64,8 +64,8 @@ code{background:#fff;border:2.5px solid #1b1330;border-radius:10px;padding:4px 8
   <button id="btnStop" class="btn stop" type="button" disabled>운영 종료</button>
 </div>
 <p id="msg" class="note"></p>
-<p class="note">GPS 페이지 주소<br><code id="playUrl"></code></p>
-<div class="row"><a class="btn sub" href="/play" target="_blank" rel="noopener">GPS 페이지 보기</a></div>
+<p class="note">GPS 페이지 주소<br><code id="locUrl"></code></p>
+<div class="row"><a class="btn sub" href="/location" target="_blank" rel="noopener">GPS 페이지 보기</a></div>
 </div>
 </div>
 <script>
@@ -78,7 +78,7 @@ var adminKey = '', lockTimer = null;
 var st = { open: false, changedAt: 0, loaded: false, error: '' }, writing = false, note = '', noteIsErr = false;
 var POLL = 5000;
 
-$('playUrl').textContent = location.origin + '/play';
+$('locUrl').textContent = location.origin + '/location';
 try { adminKey = sessionStorage.getItem('adminKey') || ''; } catch (e) {}
 
 function p2(n) { return (n < 10 ? '0' : '') + n; }

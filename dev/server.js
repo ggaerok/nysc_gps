@@ -1,5 +1,5 @@
 // 로컬 개발용 서버: npm run dev -> http://localhost:3000
-//   /  관리 페이지   /play  GPS 페이지   /api/status, /api/auth
+//   /  관리 페이지   /location  GPS 페이지   /api/status, /api/auth
 // 저장소 환경변수가 없으면 .dev-status.json 파일에 상태를 저장한다.
 const http = require('http'), fs = require('fs'), path = require('path');
 const root = path.join(__dirname, '..');
