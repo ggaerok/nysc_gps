@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#3b2a8a">
+<title>내 GPS 좌표</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&display=swap">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:#3b2a8a;color:#1b1330;
+  font-family:'Jua',-apple-system,BlinkMacSystemFont,"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+  -webkit-tap-highlight-color:transparent}
+body{min-height:100vh;display:flex;flex-direction:column;align-items:center;text-align:center;padding:24px 16px 40px;
+  background:
+  radial-gradient(circle at 12% 18%,#ffe9a8 0 2px,transparent 3px),radial-gradient(circle at 80% 12%,#ffe9a8 0 2px,transparent 3px),
+  radial-gradient(circle at 30% 70%,#ffe9a8 0 1.5px,transparent 2.5px),radial-gradient(circle at 90% 80%,#ffe9a8 0 2px,transparent 3px),
+  radial-gradient(circle at 55% 40%,#ffe9a8 0 1.5px,transparent 2.5px),radial-gradient(120% 80% at 50% 0%,#5b43c4 0%,#3b2a8a 55%,#261a63 100%)}
+h1{margin:0 0 6px;font-size:30px;font-weight:400;color:#fff3cf;text-shadow:0 3px 0 #1b1330}
+h2{margin:0 0 8px;font-size:20px;font-weight:400}
+.card{background:#fff3cf;border:3.5px solid #1b1330;border-radius:24px;box-shadow:0 6px 0 #1b1330;padding:18px 20px 20px;width:100%;max-width:400px;margin-top:16px}
+.note{color:#4a3b78;font-size:15px;line-height:1.5;margin:6px 0}
+.top-note{color:#e6dcff;font-size:14px;line-height:1.5;max-width:360px;margin:6px 0}
+.row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin:12px 0}
+.btn{font:inherit;font-size:19px;border:3.5px solid #1b1330;border-radius:18px;padding:11px 24px;cursor:pointer;min-width:140px;
+  text-decoration:none;display:inline-block;color:#1b1330;box-shadow:0 4px 0 #1b1330}
+.btn.go{background:#ffd23f}.btn.stop{background:#ff7a7a}.btn.sub{background:#fff}
+.btn:disabled{opacity:.4;cursor:default;box-shadow:0 2px 0 #1b1330}
+.btn:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 #1b1330}
+.err{color:#c0322e}
+.hidden{display:none!important}
+html,body{height:100%}
+#cover{position:fixed;inset:0;background:#fff;z-index:9000;color:#b8b8b8;font-size:13px;display:flex;align-items:center;justify-content:center}
+.coord{background:#fff;border:3px solid #1b1330;border-radius:16px;padding:12px 14px;margin:12px 0;text-align:left}
+.coord .lbl{font-size:14px;color:#4a3b78}
+.coord .val{font-size:26px;margin-top:4px;font-variant-numeric:tabular-nums;word-break:keep-all}
+.coord .dec{font-size:13px;color:#6b5c9a;margin-top:2px;font-variant-numeric:tabular-nums}
+ul.info{text-align:left;color:#4a3b78;font-size:15px;line-height:1.6;padding-left:20px;margin:10px 0 4px}
+.row .btn{min-width:0;flex:1}
+#wrap{width:100%;display:flex;flex-direction:column;align-items:center}
+</style>
+</head>
+<body>
+<!-- 운영 중이 서버에서 확인되기 전에는 흰 화면으로 덮는다 -->
+<div id="cover"><span id="coverMsg"></span></div>
+<div id="wrap">
+<h1 style="margin-top:8px">내 GPS 좌표</h1>
+
+<div id="consent" class="card hidden">
+  <h2>이용 안내</h2>
+  <p class="note">이 페이지는 지금 사용 중인 휴대전화의 위치(GPS)를 화면에 실시간으로 보여줍니다.</p>
+  <ul class="info">
+    <li>위도·경도를 도·각분·각초로 표시합니다. (각초는 소수 둘째 자리)</li>
+    <li>좌표는 이 기기의 화면에만 표시됩니다. 서버로 전송하거나 어디에도 저장하지 않습니다.</li>
+    <li>[동의]를 누르면 위치 사용 권한을 묻는 창이 나타납니다.</li>
+  </ul>
+  <div class="row"><button id="cancel" class="btn sub" type="button">취소</button><button id="agree" class="btn go" type="button">동의</button></div>
+</div>
+
+<div id="view" class="card hidden">
+  <div class="coord"><div class="lbl">위도 (Latitude)</div><div class="val" id="lat">위치 수신 중…</div><div class="dec" id="latd"></div></div>
+  <div class="coord"><div class="lbl">경도 (Longitude)</div><div class="val" id="lon">위치 수신 중…</div><div class="dec" id="lond"></div></div>
+  <p class="note" id="acc"></p>
+  <p class="note err" id="err"></p>
+</div>
+</div>
+<script src="/dms.js"></script>
+<script>
+(function () {
+'use strict';
+function $(id) { return document.getElementById(id); }
+var cover = $('cover'), consent = $('consent'), view = $('view');
+var POLL = 3000, MAX_FAILS = 2, fails = 0, agreed = false, watchId = null;
+
+function stopWatch() { if (watchId !== null) { try { navigator.geolocation.clearWatch(watchId); } catch (e) {} watchId = null; } }
+function reset() {
+  stopWatch(); agreed = false;
+  $('lat').textContent = '위치 수신 중…'; $('lon').textContent = '위치 수신 중…';
+  $('latd').textContent = ''; $('lond').textContent = ''; $('acc').textContent = ''; $('err').textContent = '';
+}
+function dmsText(r) { return r.dir + ' ' + r.d + '° ' + r.m + '′ ' + r.s + '″'; }
+
+function show(open, msg) {
+  if (!open) { reset(); consent.classList.add('hidden'); view.classList.add('hidden'); cover.style.display = 'flex'; $('coverMsg').textContent = msg || ''; return; }
+  cover.style.display = 'none';
+  if (agreed) { consent.classList.add('hidden'); view.classList.remove('hidden'); }
+  else { view.classList.add('hidden'); consent.classList.remove('hidden'); }
+}
+function check() {
+  fetch('/api/status', { cache: 'no-store' }).then(function (r) {
+    if (!r.ok) throw new Error('http ' + r.status);
+    return r.json();
+  }).then(function (s) {
+    fails = 0;
+    if (s && s.open === true) show(true); else show(false, '현재 운영 중이 아닙니다');
+  }).then(null, function () { fails++; if (fails >= MAX_FAILS) show(false, '연결할 수 없습니다'); });
+}
+
+function startWatch() {
+  if (!navigator.geolocation) { $('err').textContent = '이 브라우저는 위치 기능을 지원하지 않습니다.'; return; }
+  // 좌표는 아래 콜백에서 화면에 그리는 데에만 쓴다. 전송·저장 코드는 없다.
+  watchId = navigator.geolocation.watchPosition(function (pos) {
+    var c = pos.coords;
+    $('lat').textContent = dmsText(toDMS(c.latitude, true));
+    $('lon').textContent = dmsText(toDMS(c.longitude, false));
+    $('latd').textContent = c.latitude.toFixed(6) + '°';
+    $('lond').textContent = c.longitude.toFixed(6) + '°';
+    $('acc').textContent = '정확도 약 ' + Math.round(c.accuracy) + 'm';
+    $('err').textContent = '';
+  }, function (e) {
+    $('err').textContent = e.code === 1 ? '위치 권한이 거부되었습니다. 브라우저 설정에서 허용한 뒤 새로고침해 주세요.'
+      : e.code === 2 ? '위치를 확인할 수 없습니다.' : '위치 확인 시간이 초과되었습니다.';
+  }, { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 });
+}
+
+$('agree').addEventListener('click', function () { agreed = true; show(true); startWatch(); });
+$('cancel').addEventListener('click', function () {
+  reset(); window.close();                       // 스크립트로 연 창이 아니면 닫히지 않을 수 있어 빈 페이지로 이동
+  setTimeout(function () { location.replace('about:blank'); }, 150);
+});
+
+show(false, '');
+check();
+setInterval(function () { if (!document.hidden) check(); }, POLL);
+document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });
+})();
+</script>
+</body>
+</html>
