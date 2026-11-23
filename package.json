@@ -1,8 +1,8 @@
 {
-  "name": "nysc_gps",
+  "name": "nysc_gps_vercel",
   "version": "1.0.0",
   "private": true,
-  "description": "내 휴대전화 GPS 좌표 보기 (도·분·초 표시, 운영 시작/종료 관리 포함)",
+  "description": "GPS Viewer 1(Vercel) — 내 휴대전화 GPS 좌표 보기 (도·각분·각초, 운영 시작/종료 관리)",
   "scripts": {
     "start": "node render/server.js",
     "dev": "node dev/server.js",

@@ -1,4 +1,7 @@
-# nysc_gps
+# nysc_gps_vercel — GPS Viewer 1(Vercel)
+
+**Vercel 로 배포하는 저장소**입니다. 같은 코드를 Render 로 배포하는 저장소는 [nysc_gps_render](https://github.com/ggaerok/nysc_gps_render) (GPS Viewer 2) 입니다.
+두 저장소는 코드가 같고, 관리 페이지 타이틀과 배색만 다릅니다. 코드를 고칠 때는 두 저장소에 똑같이 반영합니다.
 
 내 휴대전화의 GPS 좌표를 **도 · 각분 · 각초**(각초는 소수 둘째 자리)로 실시간 표시하는 페이지입니다.
 관리 페이지에서 **운영 시작 / 운영 종료**를 눌러 페이지가 동작할지 정합니다. (관리 방식은 Cosmos Ball `nysc_game1`과 같습니다.)
@@ -45,22 +48,11 @@ test/dms.test.js    변환 시험
 
 > 위치 권한은 HTTPS 에서만 동작합니다. Vercel 주소는 HTTPS 이므로 그대로 쓰면 됩니다.
 
-## 이중 배포 (Render) — Vercel 과 완전히 분리
+## GPS Viewer 2(Render) 와의 관계
 
-Vercel 에 문제가 생길 때를 대비해 Render 에도 같은 저장소를 배포합니다. 두 곳은 **서버도 저장소도 따로** 씁니다.
-
-| | Vercel | Render |
-|---|---|---|
-| 주소 | Vercel 주소 | https://nysc-gps.onrender.com |
-| 저장소 | Turso (`TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`) | Render Key Value `nysc-gps-kv` (`REDIS_URL`) |
-| 운영 시작/종료 | Vercel 관리 페이지에서만 | Render 관리 페이지에서만 |
-| 관리 번호 | Vercel 의 `ADMIN_KEY` | Render 의 `ADMIN_KEY` |
-
-- 운영 상태가 공유되지 않으므로 **각 관리 페이지에서 따로** 켜고 끕니다.
-- Render 설정: Web Service, Runtime Node, Build `npm install`, Start `npm start`, 지역 Singapore. 환경변수 `REDIS_URL`(Key Value 의 Internal URL), `TABLE_PREFIX=gps_render`, `ADMIN_KEY`.
-- 무료 Key Value 는 디스크에 보존하지 않아, 재시작되면 운영 상태가 지워지고 **운영 종료** 로 돌아갑니다. 운영 중이었다면 관리 페이지에서 다시 [운영 시작]을 누릅니다.
-- 무료 웹 서비스는 15분간 접속이 없으면 잠들고, 다음 접속 때 깨어나는 데 30초~1분 걸립니다.
-- 코드는 같은 GitHub 저장소에서 두 곳에 자동 배포됩니다. 잘못된 코드를 올리면 두 곳에 함께 반영되니 주의합니다.
+- Render 배포는 [nysc_gps_render](https://github.com/ggaerok/nysc_gps_render) 저장소에서 따로 합니다. 이 저장소는 Vercel 에만 배포됩니다.
+- 서버·저장소(Turso / Render Key Value)·운영 상태·관리 번호가 모두 따로입니다. 운영은 각 관리 페이지에서 따로 켜고 끕니다.
+- 코드에 Render 용 실행 파일(`render/`, `npm start`, Redis 지원)이 함께 들어 있는 것은 두 저장소의 코드를 똑같이 유지하기 위해서이며, Vercel 배포에는 쓰이지 않습니다.
 
 ## 로컬 실행
 
